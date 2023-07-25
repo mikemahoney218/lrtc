@@ -5,15 +5,15 @@
 //! This crate is a Rust implementation of Jiang et al (2023),
 //! using text compressors to efficiently classify text snippets
 //! via k-nearest neighbors.
-//! 
+//!
 //! Full method citation:
-//! Zhiying Jiang, Matthew Yang, Mikhail Tsirlin, Raphael Tang, Yiqin Dai, and Jimmy Lin. 
-//! 2023. “Low-Resource” Text Classification: A Parameter-Free Classification Method with Compressors. 
-//! In Findings of the Association for Computational Linguistics: ACL 2023, pages 6810–6828, Toronto, Canada. 
+//! Zhiying Jiang, Matthew Yang, Mikhail Tsirlin, Raphael Tang, Yiqin Dai, and Jimmy Lin.
+//! 2023. “Low-Resource” Text Classification: A Parameter-Free Classification Method with Compressors.
+//! In Findings of the Association for Computational Linguistics: ACL 2023, pages 6810–6828, Toronto, Canada.
 //! Association for Computational Linguistics. <https://aclanthology.org/2023.findings-acl.426>
 //!
 //! # Examples
-//! 
+//!
 //! ```
 //! let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
 //! let training_labels = vec!["normal".to_string(), "godzilla".into(),];
@@ -34,7 +34,7 @@ use zstd::bulk::compress;
 /// This struct pairs training content with its label, and optionally with its length when compressed.
 ///
 /// # Examples
-/// 
+///
 /// ```
 /// let out = TrainingData {label = "godzilla".to_string(), content = "godzilla ate mars in June".to_string()};
 /// println!{"{:?}", out};
@@ -52,7 +52,7 @@ pub struct TrainingData {
 /// This enables easier sorting and nearest-neighbor matching.
 ///
 /// # Examples
-/// 
+///
 /// ```
 /// let out = NCD {label = "godzilla".to_string(), ncd = 0.5f64};
 /// println!{"{:?}", out};
@@ -60,7 +60,7 @@ pub struct TrainingData {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NCD {
     label: String,
-    ncd: f64
+    ncd: f64,
 }
 
 /// Calculate the length of an input string once compressed
@@ -68,22 +68,20 @@ pub struct NCD {
 /// Currently this function uses zstd for compression, at level `level`.
 ///
 /// # Examples
-/// 
+///
 /// ```
 /// let out = compressed_length(&"godzilla eats marshes in August".to_string(), 3i32);
 /// println!{"{:?}", out};
 /// ```
 pub fn compressed_length(training: &String, level: i32) -> usize {
     let compressed = compress(training.as_bytes(), level).unwrap();
-    println!("compressed: {:?}", compressed);
-
     compressed.len()
 }
 
 /// Calculate a vector of NCD values for a given query
 ///
 /// # Examples
-/// 
+///
 /// ```
 /// let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
 /// let training_labels = vec!["normal".to_string(), "godzilla".into(),];
@@ -126,12 +124,6 @@ pub fn ncd(training_data: Vec<TrainingData>, query: String, level: i32) -> Vec<N
         .map(|train_length| *max(train_length, &len_query))
         .collect::<Vec<usize>>();
 
-    println!("len_query: {:?}", len_query);
-    println!("len_training: {:?}", len_query);
-    println!("len_combo: {:?}", len_query);
-    println!("mins: {:?}", len_query);
-    println!("maxes: {:?}", len_query);
-
     len_combo
         .par_iter()
         .zip(mins.par_iter())
@@ -143,14 +135,17 @@ pub fn ncd(training_data: Vec<TrainingData>, query: String, level: i32) -> Vec<N
         .collect::<Vec<f64>>()
         .par_iter()
         .zip(training_data.par_iter())
-        .map(|(ncd, td)| NCD {label: td.label.clone(), ncd: *ncd})
+        .map(|(ncd, td)| NCD {
+            label: td.label.clone(),
+            ncd: *ncd,
+        })
         .collect()
 }
 
 /// Classify sentences based on their distance from a set of labeled training data.
 ///
 /// # Examples
-/// 
+///
 /// ```
 /// let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
 /// let training_labels = vec!["normal".to_string(), "godzilla".into(),];
@@ -178,11 +173,7 @@ pub fn classify(
     queries
         .par_iter()
         .map(|query| {
-            let mut ncds = ncd(
-                training_data.clone(),
-                query.clone(),
-                level,
-            );
+            let mut ncds = ncd(training_data.clone(), query.clone(), level);
 
             ncds.sort_by(|a, b| a.ncd.total_cmp(&b.ncd));
             ncds[0..k]
