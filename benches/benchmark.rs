@@ -1,6 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use csv::Reader;
-use lrtc::classify;
+use lrtc::{classify, CompressionAlgorithm};
 use std::fs::File;
 use std::vec::Vec;
 
@@ -14,13 +14,50 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         content.push(record.as_ref().unwrap()[0].to_string());
         label.push(record.unwrap()[1].to_string());
     }
-    c.bench_function("classify 3", |b| {
+    c.bench_function("classify zstd", |b| {
         b.iter(|| {
             classify(
-                content[0..10000].to_vec(),
-                label[0..10000].to_vec(),
+                content[0..1000].to_vec(),
+                label[0..1000].to_vec(),
                 content[40000..41000].to_vec(),
                 3i32,
+                CompressionAlgorithm::Zstd,
+                5usize,
+            )
+        })
+    });
+    c.bench_function("classify gzip", |b| {
+        b.iter(|| {
+            classify(
+                content[0..1000].to_vec(),
+                label[0..1000].to_vec(),
+                content[40000..41000].to_vec(),
+                3i32,
+                CompressionAlgorithm::Gzip,
+                5usize,
+            )
+        })
+    });
+    c.bench_function("classify zlib", |b| {
+        b.iter(|| {
+            classify(
+                content[0..1000].to_vec(),
+                label[0..1000].to_vec(),
+                content[40000..41000].to_vec(),
+                3i32,
+                CompressionAlgorithm::Zlib,
+                5usize,
+            )
+        })
+    });
+    c.bench_function("classify deflate", |b| {
+        b.iter(|| {
+            classify(
+                content[0..1000].to_vec(),
+                label[0..1000].to_vec(),
+                content[40000..41000].to_vec(),
+                3i32,
+                CompressionAlgorithm::Deflate,
                 5usize,
             )
         })

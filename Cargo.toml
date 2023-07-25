@@ -3,7 +3,7 @@
 [package]
 name = "lrtc"
 authors = ["Mike Mahoney"]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.71"
 license = "MIT"
@@ -17,12 +17,14 @@ exclude = ["/data"]
 
 [dependencies]
 csv = "1.2.2"
+flate2 = { version = "1.0.17", features = ["zlib-ng"], default-features = false }
 rayon = "1.7.0"
 serde = { version = "1.0", features = ["derive"] }
 zstd = "0.12.4"
 
 [dev-dependencies]
 criterion = "0.3.6"
+
 
 [[bench]]
 name = "benchmark"

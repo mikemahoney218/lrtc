@@ -1,15 +1,18 @@
 # lrtc: Low-resource text classification
 
 This crate is a Rust implementation of the low-resource text classification
-method introduced in Jiang et al. (2023). Unlike Jiang et al., this implementation
-currently relies on zstd, rather than gzip, as a compression utility.
+method introduced in Jiang et al. (2023). This implementation allows you to
+choose from gzip, zstd, zlib, or deflate compression algorithms, at various
+levels of compression.
 
 ```rust
+use lrtc::{CompressionAlgorithm, classify};
+
 let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
 let training_labels = vec!["normal".to_string(), "godzilla".into(),];
 let queries = vec!["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
 // Using a compression level of 3, and 1 nearest neighbor:
-println!("{:?}", classify(training, training_labels, queries, 3i32, 1usize));
+println!("{:?}", classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 ```
 
 This method seems to perform decently well for relatively sparse training sets,
@@ -17,9 +20,8 @@ and does not require the same amount of tuning as neural net methods.
 
 ```rust
 use csv::Reader;
-use lrtc::classify;
+use lrtc::{classify, CompressionAlgorithm};
 use std::fs::File;
-use std::vec::Vec;
 let imdb = File::open("./data/imdb.csv").unwrap();
 let mut reader = Reader::from_reader(imdb);
 
@@ -31,20 +33,20 @@ for record in reader.records() {
 }
 
 let predictions = classify(
-    content[0..10000].to_vec(),
-    label[0..10000].to_vec(),
+    content[0..1000].to_vec(),
+    label[0..1000].to_vec(),
     content[40000..50000].to_vec(),
     3i32,
-    5usize,
+    CompressionAlgorithm::Gzip,
+    1usize,
 );
 let correct = predictions
     .iter()
     .zip(label[40000..50000].to_vec().iter())
     .filter(|(a, b)| a == b)
     .count();
-
 println!("{}", correct as f64 / 10000f64)
-// 0.701
+// 0.623
 ```
 
 ## References
