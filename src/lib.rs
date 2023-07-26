@@ -46,7 +46,7 @@ use zstd::bulk::compress;
 /// let out = TrainingData {label: "godzilla", content: "godzilla ate mars in June", compressed_length: None};
 /// println!{"{:?}", out};
 /// ```
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct TrainingData<'a> {
     /// The class label of each observation. These are the values that will be returned.
     pub label: &'a str,
@@ -71,7 +71,7 @@ pub struct TrainingData<'a> {
 /// let out = NCD {label: "godzilla", ncd: 0.5f64};
 /// println!{"{:?}", out};
 /// ```
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NCD<'a> {
     /// The class label of the original training observation. These are the values that will be returned.
     pub label: &'a str,
@@ -80,7 +80,7 @@ pub struct NCD<'a> {
 }
 
 /// Available compression algorithms
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum CompressionAlgorithm {
     /// Facebook's zstd library, provided by zstd
     Zstd,
@@ -105,19 +105,19 @@ pub enum CompressionAlgorithm {
 /// println!{"{:?}", out};
 /// ```
 pub fn compressed_length(training: &str, level: i32, algorithm: &CompressionAlgorithm) -> usize {
-    let compressed = match algorithm {
-        &CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
-        &CompressionAlgorithm::Gzip => {
+    let compressed = match *algorithm {
+        CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
+        CompressionAlgorithm::Gzip => {
             let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
         }
-        &CompressionAlgorithm::Zlib => {
+        CompressionAlgorithm::Zlib => {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
         }
-        &CompressionAlgorithm::Deflate => {
+        CompressionAlgorithm::Deflate => {
             let mut encoder = DeflateEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
@@ -159,7 +159,7 @@ pub fn ncd<'a>(
         .par_iter()
         .map(|td| {
             td.compressed_length
-                .unwrap_or_else(|| compressed_length(&td.content, level, algorithm))
+                .unwrap_or_else(|| compressed_length(td.content, level, algorithm))
         })
         .collect::<Vec<usize>>();
     let len_query = compressed_length(query, level, algorithm);
@@ -222,8 +222,8 @@ pub fn classify(
         .par_iter()
         .zip(training_labels.par_iter())
         .map(|(content, label)| TrainingData {
-            label: label,
-            content: content,
+            label,
+            content,
             compressed_length: Some(compressed_length(content, level, &algorithm)),
         })
         .collect::<Vec<TrainingData>>();
