@@ -147,10 +147,10 @@ pub fn compressed_length(training: &String, level: i32, algorithm: &CompressionA
 ///        })
 ///        .collect::<Vec<TrainingData>>();
 ///
-/// let out = ncd(training_data, query, 3i32, &CompressionAlgorithm::Zstd);
+/// let out = ncd(&training_data, &query, 3i32, &CompressionAlgorithm::Zstd);
 /// println!{"{:?}", out};
 /// ```
-pub fn ncd(training_data: Vec<TrainingData>, query: String, level: i32, algorithm: &CompressionAlgorithm) -> Vec<NCD> {
+pub fn ncd(training_data: &Vec<TrainingData>, query: &String, level: i32, algorithm: &CompressionAlgorithm) -> Vec<NCD> {
     let len_training = training_data
         .par_iter()
         .map(|td| {
@@ -158,7 +158,7 @@ pub fn ncd(training_data: Vec<TrainingData>, query: String, level: i32, algorith
                 .unwrap_or_else(|| compressed_length(&td.content, level, algorithm))
         })
         .collect::<Vec<usize>>();
-    let len_query = compressed_length(&query, level, algorithm);
+    let len_query = compressed_length(query, level, algorithm);
 
     let len_combo = training_data
         .par_iter()
@@ -227,7 +227,7 @@ pub fn classify(
     queries
         .par_iter()
         .map(|query| {
-            let mut ncds = ncd(training_data.clone(), query.clone(), level, &algorithm);
+            let mut ncds = ncd(&training_data, query, level, &algorithm);
 
             ncds.sort_by(|a, b| a.ncd.total_cmp(&b.ncd));
             ncds[0..k]

@@ -16,7 +16,6 @@ exclude = ["/data"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-csv = "1.2.2"
 flate2 = { version = "1.0.17", features = ["zlib-ng"], default-features = false }
 rayon = "1.7.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -24,7 +23,7 @@ zstd = "0.12.4"
 
 [dev-dependencies]
 criterion = "0.5.1"
-
+csv = "1.2.2"
 
 [[bench]]
 name = "benchmark"
