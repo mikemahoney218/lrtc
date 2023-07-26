@@ -1,5 +1,21 @@
 # lrtc: Low-resource text classification
 
+[![crates.io][crates-io-badge]][crates-io]
+[![MIT licensed][license-badge]](#license)
+[![Documentation][docs-badge]][docs]
+[![Source Code Repository][repo-badge]][repo])
+[![CI][ci-badge]][ci]
+
+[repo-badge]: https://img.shields.io/badge/Code-On%20github.com-blue
+[repo]: https://github.com/mikemahoney218/lrtc
+[crates-io-badge]: https://img.shields.io/crates/v/lrtc.svg
+[crates-io]: https://crates.io/crates/lrtc
+[license-badge]: https://img.shields.io/badge/license-MIT-blue
+[docs-badge]: https://docs.rs/lrtc/badge.svg
+[docs]: https://docs.rs/lrtc
+[ci-badge]: https://github.com/mikemahoney218/lrtc/actions/workflows/rust.yml/badge.svg
+[ci]: https://github.com/ropensci/waywiser/actions/workflows/rust.yml
+
 This crate is a Rust implementation of the low-resource text classification
 method introduced in Jiang et al. (2023). This implementation allows you to
 choose from gzip, zstd, zlib, or deflate compression algorithms, at various
