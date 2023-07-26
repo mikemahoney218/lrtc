@@ -3,7 +3,7 @@
 [![crates.io][crates-io-badge]][crates-io]
 [![MIT licensed][license-badge]](#license)
 [![Documentation][docs-badge]][docs]
-[![Source Code Repository][repo-badge]][repo])
+[![Source Code Repository][repo-badge]][repo]
 [![CI][ci-badge]][ci]
 
 [repo-badge]: https://img.shields.io/badge/Code-On%20github.com-blue
