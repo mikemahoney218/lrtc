@@ -46,7 +46,7 @@ use zstd::bulk::compress;
 /// let out = TrainingData {label: "godzilla", content: "godzilla ate mars in June", compressed_length: None};
 /// println!{"{:?}", out};
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize)]
 pub struct TrainingData<'a> {
     /// The class label of each observation. These are the values that will be returned.
     pub label: &'a str,
@@ -71,7 +71,7 @@ pub struct TrainingData<'a> {
 /// let out = NCD {label: "godzilla", ncd: 0.5f64};
 /// println!{"{:?}", out};
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize)]
 pub struct NCD<'a> {
     /// The class label of the original training observation. These are the values that will be returned.
     pub label: &'a str,
@@ -80,7 +80,7 @@ pub struct NCD<'a> {
 }
 
 /// Available compression algorithms
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize)]
 pub enum CompressionAlgorithm {
     /// Facebook's zstd library, provided by zstd
     Zstd,
