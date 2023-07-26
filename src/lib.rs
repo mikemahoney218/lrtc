@@ -24,15 +24,15 @@
 //! println!("{:?}", classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 //! ```
 
+use flate2::write::{DeflateEncoder, GzEncoder, ZlibEncoder};
+use flate2::Compression;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
 use std::collections::HashMap;
+use std::io::Write;
 use std::string::String;
 use zstd::bulk::compress;
-use flate2::{Compression};
-use flate2::write::{DeflateEncoder, GzEncoder, ZlibEncoder};
-use std::io::Write;
 
 /// Training data struct
 ///
@@ -43,15 +43,15 @@ use std::io::Write;
 /// ```
 /// use lrtc::{TrainingData};
 ///
-/// let out = TrainingData {label: "godzilla".to_string(), content: "godzilla ate mars in June".to_string(), compressed_length: None};
+/// let out = TrainingData {label: "godzilla", content: "godzilla ate mars in June", compressed_length: None};
 /// println!{"{:?}", out};
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TrainingData {
+pub struct TrainingData<'a> {
     /// The class label of each observation. These are the values that will be returned.
-    pub label: String,
+    pub label: &'a str,
     /// The text content of the observation. This is the value distance calculations rely on.
-    pub content: String,
+    pub content: &'a str,
     /// The length of `content` when compressed. This obviously depends on the algorithm used
     /// (and compression level), and therefore should generally be `None` when manually creating
     /// TrainingData objects -- this field will be automatically populated by `ncd()`.
@@ -68,13 +68,13 @@ pub struct TrainingData {
 /// ```
 /// use lrtc::NCD;
 ///
-/// let out = NCD {label: "godzilla".to_string(), ncd: 0.5f64};
+/// let out = NCD {label: "godzilla", ncd: 0.5f64};
 /// println!{"{:?}", out};
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NCD {
+pub struct NCD<'a> {
     /// The class label of the original training observation. These are the values that will be returned.
-    pub label: String,
+    pub label: &'a str,
     /// The NCD between the query point and the original training observation. Lower values imply closer strings.
     pub ncd: f64,
 }
@@ -89,7 +89,7 @@ pub enum CompressionAlgorithm {
     /// The zlib-ng algorithm, provided by flate2
     Zlib,
     /// The classic deflate algorithm, provided by flate2
-    Deflate
+    Deflate,
 }
 
 /// Calculate the length of an input string once compressed
@@ -104,24 +104,24 @@ pub enum CompressionAlgorithm {
 /// let out = compressed_length(&"godzilla eats marshes in August".to_string(), 3i32, &CompressionAlgorithm::Zstd);
 /// println!{"{:?}", out};
 /// ```
-pub fn compressed_length(training: &String, level: i32, algorithm: &CompressionAlgorithm) -> usize {
+pub fn compressed_length(training: &str, level: i32, algorithm: &CompressionAlgorithm) -> usize {
     let compressed = match algorithm {
         &CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
         &CompressionAlgorithm::Gzip => {
             let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
-        },
+        }
         &CompressionAlgorithm::Zlib => {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
-        },
+        }
         &CompressionAlgorithm::Deflate => {
             let mut encoder = DeflateEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
-        },
+        }
     };
     compressed.len()
 }
@@ -133,9 +133,9 @@ pub fn compressed_length(training: &String, level: i32, algorithm: &CompressionA
 /// ```
 /// use lrtc::{TrainingData, compressed_length, ncd, CompressionAlgorithm};
 ///
-/// let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
-/// let training_labels = vec!["normal".to_string(), "godzilla".into(),];
-/// let query = "another normal sentence".to_string();
+/// let training = vec!["some normal sentence", "godzilla ate mars in June",];
+/// let training_labels = vec!["normal", "godzilla",];
+/// let query = "another normal sentence";
 /// let training_data = training
 ///        .iter()
 ///        .zip(training_labels.iter())
@@ -149,7 +149,12 @@ pub fn compressed_length(training: &String, level: i32, algorithm: &CompressionA
 /// let out = ncd(&training_data, &query, 3i32, &CompressionAlgorithm::Zstd);
 /// println!{"{:?}", out};
 /// ```
-pub fn ncd(training_data: &Vec<TrainingData>, query: &String, level: i32, algorithm: &CompressionAlgorithm) -> Vec<NCD> {
+pub fn ncd<'a>(
+    training_data: &'a Vec<TrainingData<'a>>,
+    query: &'a str,
+    level: i32,
+    algorithm: &'a CompressionAlgorithm,
+) -> Vec<NCD<'a>> {
     let len_training = training_data
         .par_iter()
         .map(|td| {
@@ -186,7 +191,7 @@ pub fn ncd(training_data: &Vec<TrainingData>, query: &String, level: i32, algori
         .par_iter()
         .zip(training_data.par_iter())
         .map(|(ncd, td)| NCD {
-            label: td.label.clone(),
+            label: td.label,
             ncd: *ncd,
         })
         .collect()
@@ -217,8 +222,8 @@ pub fn classify(
         .par_iter()
         .zip(training_labels.par_iter())
         .map(|(content, label)| TrainingData {
-            label: label.clone(),
-            content: content.clone(),
+            label: label,
+            content: content,
             compressed_length: Some(compressed_length(content, level, &algorithm)),
         })
         .collect::<Vec<TrainingData>>();
@@ -231,8 +236,8 @@ pub fn classify(
             ncds.sort_by(|a, b| a.ncd.total_cmp(&b.ncd));
             ncds[0..k]
                 .iter()
-                .map(|x| x.label.clone())
-                .collect::<Vec<String>>()
+                .map(|x| x.label)
+                .collect::<Vec<&str>>()
                 .iter()
                 .fold(HashMap::<String, usize>::new(), |mut m, x| {
                     *m.entry(x.to_string()).or_default() += 1;
@@ -265,10 +270,17 @@ mod tests {
         ];
 
         assert_eq!(
-            classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize),
+            classify(
+                training,
+                training_labels,
+                queries,
+                3i32,
+                CompressionAlgorithm::Gzip,
+                1usize
+            ),
             vec!["a".to_string(), "b".into()]
         );
-    }    
+    }
 
     #[test]
     fn csv_classifications() {
@@ -281,7 +293,7 @@ mod tests {
             content.push(record.as_ref().unwrap()[0].to_string());
             label.push(record.unwrap()[1].to_string());
         }
-        
+
         let predictions = classify(
             content[0..5000].to_vec(),
             label[0..5000].to_vec(),
