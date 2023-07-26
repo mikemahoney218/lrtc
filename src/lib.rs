@@ -21,7 +21,7 @@
 //! let training_labels = vec!["normal".to_string(), "godzilla".into(),];
 //! let queries = vec!["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
 //! // Using a compression level of 3, and 1 nearest neighbor:
-//! println!("{:?}", classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
+//! println!("{:?}", classify(&training, &training_labels, &queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 //! ```
 
 use flate2::write::{DeflateEncoder, GzEncoder, ZlibEncoder};
@@ -101,7 +101,7 @@ pub enum CompressionAlgorithm {
 /// ```
 /// use lrtc::{CompressionAlgorithm, compressed_length};
 ///
-/// let out = compressed_length(&"godzilla eats marshes in August".to_string(), 3i32, &CompressionAlgorithm::Zstd);
+/// let out = compressed_length("godzilla eats marshes in August", 3i32, &CompressionAlgorithm::Zstd);
 /// println!{"{:?}", out};
 /// ```
 pub fn compressed_length(training: &str, level: i32, algorithm: &CompressionAlgorithm) -> usize {
@@ -140,8 +140,8 @@ pub fn compressed_length(training: &str, level: i32, algorithm: &CompressionAlgo
 ///        .iter()
 ///        .zip(training_labels.iter())
 ///        .map(|(content, label)| TrainingData {
-///            label: label.clone(),
-///            content: content.clone(),
+///            label: label,
+///            content: content,
 ///            compressed_length: Some(compressed_length(content, 3i32, &CompressionAlgorithm::Gzip)),
 ///        })
 ///        .collect::<Vec<TrainingData>>();
@@ -204,16 +204,16 @@ pub fn ncd<'a>(
 /// ```
 /// use lrtc::{CompressionAlgorithm, classify};
 ///
-/// let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
-/// let training_labels = vec!["normal".to_string(), "godzilla".into(),];
-/// let queries = vec!["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
+/// let training = ["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
+/// let training_labels = ["normal".to_string(), "godzilla".into(),];
+/// let queries = ["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
 /// // Using a compression level of 3, and 1 nearest neighbor:
-/// println!("{:?}", classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
+/// println!("{:?}", classify(&training, &training_labels, &queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 /// ```
 pub fn classify(
-    training: Vec<String>,
-    training_labels: Vec<String>,
-    queries: Vec<String>,
+    training: &[String],
+    training_labels: &[String],
+    queries: &[String],
     level: i32,
     algorithm: CompressionAlgorithm,
     k: usize,
@@ -259,21 +259,21 @@ mod tests {
 
     #[test]
     fn test_classification() {
-        let training = vec![
+        let training = [
             "some normal sentence".to_string(),
             "godzilla ate mars in June".into(),
         ];
-        let training_labels = vec!["a".to_string(), "b".into()];
-        let queries = vec![
+        let training_labels = ["a".to_string(), "b".into()];
+        let queries = [
             "another normal sentence".to_string(),
             "godzilla eats marshes in August".into(),
         ];
 
         assert_eq!(
             classify(
-                training,
-                training_labels,
-                queries,
+                &training,
+                &training_labels,
+                &queries,
                 3i32,
                 CompressionAlgorithm::Gzip,
                 1usize
@@ -295,9 +295,9 @@ mod tests {
         }
 
         let predictions = classify(
-            content[0..5000].to_vec(),
-            label[0..5000].to_vec(),
-            content[5000..6000].to_vec(),
+            &content[0..5000],
+            &label[0..5000],
+            &content[5000..6000],
             3i32,
             CompressionAlgorithm::Zstd,
             1usize,

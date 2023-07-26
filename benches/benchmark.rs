@@ -17,9 +17,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("classify zstd", |b| {
         b.iter(|| {
             classify(
-                content[0..1000].to_vec(),
-                label[0..1000].to_vec(),
-                content[40000..41000].to_vec(),
+                &content[0..1000],
+                &label[0..1000],
+                &content[40000..41000],
                 3i32,
                 CompressionAlgorithm::Zstd,
                 5usize,
@@ -29,9 +29,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("classify gzip", |b| {
         b.iter(|| {
             classify(
-                content[0..1000].to_vec(),
-                label[0..1000].to_vec(),
-                content[40000..41000].to_vec(),
+                &content[0..1000],
+                &label[0..1000],
+                &content[40000..41000],
                 3i32,
                 CompressionAlgorithm::Gzip,
                 5usize,
@@ -41,9 +41,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("classify zlib", |b| {
         b.iter(|| {
             classify(
-                content[0..1000].to_vec(),
-                label[0..1000].to_vec(),
-                content[40000..41000].to_vec(),
+                &content[0..1000],
+                &label[0..1000],
+                &content[40000..41000],
                 3i32,
                 CompressionAlgorithm::Zlib,
                 5usize,
@@ -53,9 +53,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("classify deflate", |b| {
         b.iter(|| {
             classify(
-                content[0..1000].to_vec(),
-                label[0..1000].to_vec(),
-                content[40000..41000].to_vec(),
+                &content[0..1000],
+                &label[0..1000],
+                &content[40000..41000],
                 3i32,
                 CompressionAlgorithm::Deflate,
                 5usize,
