@@ -105,20 +105,19 @@ pub enum CompressionAlgorithm {
 /// println!{"{:?}", out};
 /// ```
 pub fn compressed_length(training: &String, level: i32, algorithm: &CompressionAlgorithm) -> usize {
-    let alg = algorithm.to_owned();
-    let compressed = match alg {
-        CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
-        CompressionAlgorithm::Gzip => {
+    let compressed = match algorithm {
+        &CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
+        &CompressionAlgorithm::Gzip => {
             let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
         },
-        CompressionAlgorithm::Zlib => {
+        &CompressionAlgorithm::Zlib => {
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
         },
-        CompressionAlgorithm::Deflate => {
+        &CompressionAlgorithm::Deflate => {
             let mut encoder = DeflateEncoder::new(Vec::new(), Compression::new(level as u32));
             encoder.write_all(training.as_bytes()).unwrap();
             encoder.finish().unwrap()
