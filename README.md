@@ -12,7 +12,7 @@ let training = vec!["some normal sentence".to_string(), "godzilla ate mars in Ju
 let training_labels = vec!["normal".to_string(), "godzilla".into(),];
 let queries = vec!["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
 // Using a compression level of 3, and 1 nearest neighbor:
-println!("{:?}", classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
+println!("{:?}", classify(&training, &training_labels, &queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 ```
 
 This method seems to perform decently well for relatively sparse training sets,
@@ -25,27 +25,31 @@ use std::fs::File;
 let imdb = File::open("./data/imdb.csv").unwrap();
 let mut reader = Reader::from_reader(imdb);
 
-let mut content = Vec::with_capacity(50000);
-let mut label = Vec::with_capacity(50000);
-for record in reader.records() {
-    content.push(record.as_ref().unwrap()[0].to_string());
-    label.push(record.unwrap()[1].to_string());
-}
+    let imdb = File::open("./data/imdb.csv").unwrap();
+    let mut reader = Reader::from_reader(imdb);
+
+    let mut content = Vec::with_capacity(50000);
+    let mut label = Vec::with_capacity(50000);
+    for record in reader.records() {
+        content.push(record.as_ref().unwrap()[0].to_string());
+        label.push(record.unwrap()[1].to_string());
+    }
 
 let predictions = classify(
-    content[0..1000].to_vec(),
-    label[0..1000].to_vec(),
-    content[40000..50000].to_vec(),
+    &content[0..1000],
+    &label[0..1000],
+    &content[40000..50000],
     3i32,
-    CompressionAlgorithm::Gzip,
-    1usize,
-);
+    CompressionAlgorithm::Zstd,
+    5usize,
+)
+
 let correct = predictions
     .iter()
     .zip(label[40000..50000].to_vec().iter())
     .filter(|(a, b)| a == b)
     .count();
-println!("{}", correct as f64 / 10000f64)
+println!("{}", correct as f64 / 1000f64)
 // 0.623
 ```
 
