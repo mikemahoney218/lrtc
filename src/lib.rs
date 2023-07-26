@@ -249,6 +249,8 @@ pub fn classify(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use csv::Reader;
+    use std::fs::File;
 
     #[test]
     fn test_classification() {
@@ -266,5 +268,33 @@ mod tests {
             classify(training, training_labels, queries, 3i32, CompressionAlgorithm::Gzip, 1usize),
             vec!["a".to_string(), "b".into()]
         );
+    }    
+
+    #[test]
+    fn csv_classifications() {
+        let imdb = File::open("./data/imdb.csv").unwrap();
+        let mut reader = Reader::from_reader(imdb);
+
+        let mut content = Vec::with_capacity(50000);
+        let mut label = Vec::with_capacity(50000);
+        for record in reader.records() {
+            content.push(record.as_ref().unwrap()[0].to_string());
+            label.push(record.unwrap()[1].to_string());
+        }
+        
+        let predictions = classify(
+            content[0..5000].to_vec(),
+            label[0..5000].to_vec(),
+            content[5000..6000].to_vec(),
+            3i32,
+            CompressionAlgorithm::Zstd,
+            1usize,
+        );
+        let correct = predictions
+            .iter()
+            .zip(label[5000..6000].to_vec().iter())
+            .filter(|(a, b)| a == b)
+            .count();
+        assert_eq!(correct, 685usize)
     }
 }
