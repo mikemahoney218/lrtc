@@ -23,14 +23,14 @@
 //! // Using a compression level of 3, and 1 nearest neighbor:
 //! println!("{:?}", classify(&training, &training_labels, &queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
 //! ```
-
-use flate2::write::{DeflateEncoder, GzEncoder, ZlibEncoder};
-use flate2::Compression;
-use serde::{Deserialize, Serialize};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::io::Write;
 use std::string::String;
+
+use flate2::write::{DeflateEncoder, GzEncoder, ZlibEncoder};
+use flate2::Compression;
+use serde::{Deserialize, Serialize};
 use zstd::bulk::compress;
 
 pub struct Classifier {

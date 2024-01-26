@@ -1,9 +1,11 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use csv::Reader;
-use lrtc::{Classifier, CompressionAlgorithm};
 use std::fs::File;
 use std::vec::Vec;
+
+use criterion::{criterion_group, criterion_main, Criterion};
+use csv::Reader;
 use rayon::prelude::*;
+
+use lrtc::{Classifier, CompressionAlgorithm};
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let imdb = File::open("./data/imdb.csv").unwrap();
