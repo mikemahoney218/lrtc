@@ -105,7 +105,7 @@ pub enum CompressionAlgorithm {
 /// println!{"{:?}", out};
 /// ```
 pub fn compressed_length(training: &str, level: i32, algorithm: &CompressionAlgorithm) -> usize {
-    let compressed = match *algorithm {
+    let compressed = match algorithm {
         CompressionAlgorithm::Zstd => compress(training.as_bytes(), level).unwrap(),
         CompressionAlgorithm::Gzip => {
             let mut encoder = GzEncoder::new(Vec::new(), Compression::new(level as u32));
@@ -182,17 +182,14 @@ pub fn ncd<'a>(
     len_combo
         .par_iter()
         .zip(mins.par_iter())
-        .map(|(c, m)| c - m)
-        .collect::<Vec<usize>>()
-        .par_iter()
         .zip(maxes.par_iter())
-        .map(|(n, d)| *n as f64 / *d as f64)
-        .collect::<Vec<f64>>()
-        .par_iter()
         .zip(training_data.par_iter())
-        .map(|(ncd, td)| NCD {
-            label: td.label,
-            ncd: *ncd,
+        .map(|(((c, min), max), td)| {
+            let ncd = c.abs_diff(*min) as f64 / *max as f64;
+            NCD {
+                label: td.label,
+                ncd,
+            }
         })
         .collect()
 }
@@ -237,8 +234,6 @@ pub fn classify(
             ncds[0..k]
                 .iter()
                 .map(|x| x.label)
-                .collect::<Vec<&str>>()
-                .iter()
                 .fold(HashMap::<String, usize>::new(), |mut m, x| {
                     *m.entry(x.to_string()).or_default() += 1;
                     m
