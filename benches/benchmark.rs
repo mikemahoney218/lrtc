@@ -1,8 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use csv::Reader;
-use lrtc::{classify, CompressionAlgorithm};
+use lrtc::{Classifier, CompressionAlgorithm};
 use std::fs::File;
 use std::vec::Vec;
+use rayon::prelude::*;
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let imdb = File::open("./data/imdb.csv").unwrap();
@@ -14,52 +15,44 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         content.push(record.as_ref().unwrap()[0].to_string());
         label.push(record.unwrap()[1].to_string());
     }
+    let mut classifier = Classifier::new(CompressionAlgorithm::Zstd, 3);
+    classifier.train(&content[0..1000], &label[0..1000]);
     c.bench_function("classify zstd", |b| {
         b.iter(|| {
-            classify(
-                &content[0..1000],
-                &label[0..1000],
-                &content[40000..41000],
-                3i32,
-                CompressionAlgorithm::Zstd,
-                5usize,
-            )
+            let _x: Vec<_> = content[40_000..40_250]
+                .par_iter()
+                .map(|query| classifier.classify(query, 5))
+                .collect();
         })
     });
+    let mut classifier = Classifier::new(CompressionAlgorithm::Gzip, 3);
+    classifier.train(&content[0..1000], &label[0..1000]);
     c.bench_function("classify gzip", |b| {
         b.iter(|| {
-            classify(
-                &content[0..1000],
-                &label[0..1000],
-                &content[40000..41000],
-                3i32,
-                CompressionAlgorithm::Gzip,
-                5usize,
-            )
+            let _x: Vec<_> = content[40_000..40_250]
+                .par_iter()
+                .map(|query| classifier.classify(query, 5))
+                .collect();
         })
     });
+    let mut classifier = Classifier::new(CompressionAlgorithm::Zlib, 3);
+    classifier.train(&content[0..1000], &label[0..1000]);
     c.bench_function("classify zlib", |b| {
         b.iter(|| {
-            classify(
-                &content[0..1000],
-                &label[0..1000],
-                &content[40000..41000],
-                3i32,
-                CompressionAlgorithm::Zlib,
-                5usize,
-            )
+            let _x: Vec<_> = content[40_000..40_250]
+                .par_iter()
+                .map(|query| classifier.classify(query, 5))
+                .collect();
         })
     });
+    let mut classifier = Classifier::new(CompressionAlgorithm::Deflate, 3);
+    classifier.train(&content[0..1000], &label[0..1000]);
     c.bench_function("classify deflate", |b| {
         b.iter(|| {
-            classify(
-                &content[0..1000],
-                &label[0..1000],
-                &content[40000..41000],
-                3i32,
-                CompressionAlgorithm::Deflate,
-                5usize,
-            )
+            let _x: Vec<_> = content[40_000..40_250]
+                .par_iter()
+                .map(|query| classifier.classify(query, 5))
+                .collect();
         })
     });
 }
