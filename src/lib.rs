@@ -15,13 +15,15 @@
 //! # Examples
 //!
 //! ```
-//! use lrtc::{CompressionAlgorithm, classify};
+//! use lrtc::{Classifier, CompressionAlgorithm};
 //!
 //! let training = vec!["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
 //! let training_labels = vec!["normal".to_string(), "godzilla".into(),];
 //! let queries = vec!["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
 //! // Using a compression level of 3, and 1 nearest neighbor:
-//! println!("{:?}", classify(&training, &training_labels, &queries, 3i32, CompressionAlgorithm::Gzip, 1usize));
+//! let mut classifier = Classifier::new(CompressionAlgorithm::Gzip, 3);
+//! classifier.train(&training, &training_labels);
+//! println!("{:?}", classifier.classify(&queries[0], 1usize));
 //! ```
 use std::cmp::{max, min};
 use std::collections::HashMap;
@@ -33,15 +35,23 @@ use flate2::Compression;
 use serde::{Deserialize, Serialize};
 use zstd::bulk::compress;
 
+/// Configuration of text classifier
 pub struct Classifier {
+    /// Compression algorithm
     algorithm: CompressionAlgorithm,
+    /// Compression level
     level: i32,
+    /// The class label of each observation. These are the values that will be returned.
     labels: Vec<String>,
+    /// The text content of the observation. This is the value distance calculations rely on.
     content: Vec<String>,
+    /// The length of `content` when compressed. This obviously depends on the algorithm used
+    /// (and compression level).
     compressed_lengths: Vec<usize>,
 }
 
 impl Classifier {
+    /// Configure classifier
     pub fn new(algorithm: CompressionAlgorithm, level: i32) -> Classifier {
         Classifier {
             algorithm,
@@ -51,6 +61,7 @@ impl Classifier {
             compressed_lengths: Vec::new(),
         }
     }
+    /// Train the classifier on samples, can also be done incrementally
     pub fn train<S: AsRef<str>>(&mut self, content: &[S], labels: &[S]) {
         for (label, content) in labels.iter().zip(content.iter()) {
             let l = label.as_ref().to_string();
@@ -61,6 +72,21 @@ impl Classifier {
             self.labels.push(l);
         }
     }
+    /// Classify sentences based on their distance from a set of labeled training data.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lrtc::{Classifier, CompressionAlgorithm};
+    ///
+    /// let training = ["some normal sentence".to_string(), "godzilla ate mars in June".into(),];
+    /// let training_labels = ["normal".to_string(), "godzilla".into(),];
+    /// let queries = ["another normal sentence".to_string(), "godzilla eats marshes in August".into(),];
+    /// // Using a compression level of 3, and 1 nearest neighbor:
+    /// let mut classifier = Classifier::new(CompressionAlgorithm::Gzip, 3);
+    /// classifier.train(&training, &training_labels);
+    /// println!("{:?}", classifier.classify(&queries[0], 1usize));
+    /// ```
     pub fn classify(&self, query: &str, k: usize) -> String {
         let mut ncds = self.ncd(query.as_ref());
 
@@ -77,6 +103,22 @@ impl Classifier {
             .map(|(x, _)| x)
             .unwrap()
     }
+    /// Calculate a vector of NCD values for a given query
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use lrtc::{Classifier, compressed_length, CompressionAlgorithm};
+    ///
+    /// let training = vec!["some normal sentence", "godzilla ate mars in June",];
+    /// let training_labels = vec!["normal", "godzilla",];
+    /// let query = "another normal sentence";
+    /// let mut classifier = Classifier::new(CompressionAlgorithm::Gzip, 3);
+    /// classifier.train(&training, &training_labels);
+    /// println!("{:?}", classifier.classify(query, 1usize));
+    /// let out = classifier.ncd(&query);
+    /// println!{"{:?}", out};
+    /// ```
     pub fn ncd(&self, query: &str) -> Vec<NCD<'_>> {
         let len_training = &self.compressed_lengths;
         let len_query = compressed_length(query, self.level, &self.algorithm);
